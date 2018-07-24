@@ -80,9 +80,9 @@ def read():
             #ser.reset_input_buffer();
             #print("update value is(abs):" + update);
             if (update == '1'):
-                print("Case opened");
-            if (update == '2'):
                 print("Case closed");
+            if (update == '2'):
+                print("Case open");
             #if (update == '3'):
                 #print("The update is 3");
             if (update == '4'):
