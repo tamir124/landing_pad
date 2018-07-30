@@ -4,6 +4,7 @@ import time
 import requests
 import sys
 import json
+from UDP import UDP
 from threading import Thread;
 
 
@@ -31,7 +32,7 @@ def serial_ports():
     return result
 
 
-def base():
+def sendSerial():
     global stop;
     if ser != 1:
         stop = False;
@@ -72,7 +73,7 @@ def base():
             stop = True
 
 
-def read():
+def readSerial():
     while (stop != True):
         if (ser.in_waiting > 0 and stop is False):
             update = ser.read().decode(encoding='UTF-8')
@@ -102,19 +103,48 @@ def read():
 def server():
     while stop != True:
         r = requests.get('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir')
-        dict = json.loads(r.text)
-        action = dict["state"]
-        #print(action)
-        if action == "close":
-            print("Initiated landing")
-            ser.write('9'.encode(encoding='UTF-8'))
-            requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set', json={'state': 'tami'})
+        try:
+            dict = json.loads(r.text)
+            action = dict["state"]
+        except ValueError:
+            print("Value error, http request receives a non valid json")
+            action="Error in json"
+        try:
+            if int(action) >= 0 and int(action) <= 9:
+                ser.write(action.encode(encoding='UTF-8'))
+                if action == '0':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiated open case'})
+                if action == '1':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiate open case'})
+                if action == '2':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiated close case'})
+                if action == '3':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Received 3, nothing changed'})
+                if action == '4':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiated open holder'})
+                if action == '5':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiated close case'})
+                if action == '6':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Received 6, nothing changed'})
+                if action == '7':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiated move finger'})
+                if action == '8':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiated takeoff'})
+                if action == '9':
+                    requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set',
+                                  json={'state': 'Initiated landing'})
 
-        if action == "open":
-            print("Initiated takeoff")
-            ser.write('8'.encode(encoding='UTF-8'))
-            requests.post('https://3z5qhgprj8.execute-api.eu-central-1.amazonaws.com/api/tamir/set', json={'state': 'tami'})
-        time.sleep(3)
+        except ValueError:
+            continue
 
 
 if __name__ == '__main__':
@@ -137,7 +167,6 @@ if __name__ == '__main__':
                     ser = serial.Serial(port, 115200)
         except IOError:
             print("Port name incorrect, please try again.")
-    Thread(target=base).start()
-    Thread(target=read).start()
+    Thread(target=sendSerial).start()
+    #Thread(target=readSerial).start()
     Thread(target=server).start()
-
